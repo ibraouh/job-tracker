@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../services/firebase";
 import {
@@ -46,6 +46,7 @@ export default function Dashboard() {
   });
   const [userProfile, setUserProfile] = useState(null);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
   const columnWidths = {
@@ -73,6 +74,22 @@ export default function Dashboard() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowSettingsDropdown(false);
+      }
+    }
+    if (showSettingsDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSettingsDropdown]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -730,7 +747,7 @@ export default function Dashboard() {
               <circle cx={centerX} cy={centerY} r="70" fill="white" />
               <text
                 x={centerX}
-                y={centerY - 8}
+                y={centerY - 10}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="text-xs text-gray-500"
@@ -739,7 +756,7 @@ export default function Dashboard() {
               </text>
               <text
                 x={centerX}
-                y={centerY + 15}
+                y={centerY + 10}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="text-2xl font-bold"
@@ -794,13 +811,15 @@ export default function Dashboard() {
             <div className="relative">
               <button
                 onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-                className="outline-none ring-2 ring-offset-2 ring-blue-500 w-10 h-10 text-2xl rounded-full bg-gray-300 flex items-center justify-center mr-2 text-gray-600 hover:bg-gray-400"
+                className="outline-none ring-2 ring-offset-2 ring-blue-500 w-10 h-10 text-2xl rounded-full bg-gray-100 flex items-center justify-center mr-2 hover:bg-gray-200"
               >
-                <Settings></Settings>
-                {/* {userProfile.icon} */}
+                {userProfile?.icon || ""}
               </button>
               {showSettingsDropdown && (
-                <div className="absolute right-0 mt-2 w-60  bg-white rounded-md shadow-lg py-1">
+                <div
+                  ref={dropdownRef} // Attach the ref to the dropdown element
+                  className="absolute right-0 mt-2 w-60 bg-white rounded-md shadow-lg py-1"
+                >
                   <button className="bg-gray-50 text-lg font-bold block px-4 py-2 text-sm text-gray-700 w-full text-left">
                     <span>Welcome Back, {userProfile.name}</span>
                   </button>

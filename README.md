@@ -1,6 +1,6 @@
 # 🚀 Job Application Tracker
 
-<img src="public/img/cat.png" alt="drawing" width="200"/>
+<!-- <img src="public/img/cat.png" alt="drawing" width="200"/> -->
 
 ## 📌 Table of Contents
 

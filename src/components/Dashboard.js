@@ -838,14 +838,14 @@ export default function Dashboard() {
             </div>
             <div className="lg:w-full">
               <div className="">
-                <div className="flex justify-between items-center mb-10">
-                  <h2 className="text-4xl font-bold text-gray-800">
+                <div className="flex flex-col sm:flex-row justify-start sm:justify-between items-start sm:items-center mb-10 gap-2 sm:gap-0">
+                  <h2 className="text-4xl font-bold text-gray-800 pb-5 md:pb-0">
                     Dashboard
                   </h2>
-                  <div>
+                  <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2 sm:gap-2">
                     <button
                       onClick={() => setShowAutoAddModal(true)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md mr-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md w-full sm:w-auto hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       Auto Add
                     </button>
@@ -856,7 +856,7 @@ export default function Dashboard() {
                     )}
                     <button
                       onClick={() => setShowAddModal(true)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md w-full sm:w-auto hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       Manual Add
                     </button>
@@ -874,6 +874,7 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
       {showAddModal && (
         <AddJobModal
           onClose={() => setShowAddModal(false)}

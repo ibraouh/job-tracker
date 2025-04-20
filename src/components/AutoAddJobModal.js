@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { X, Loader } from "lucide-react";
 import { parseJobPosting } from "../services/jobParser";
 
-export default function AutoAddJobModal({ onClose, onAddJob, apiKey }) {
+export default function AutoAddJobModal({ onClose, onAddJob, apiKey, userId }) {
   const [jobLink, setJobLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -13,7 +13,9 @@ export default function AutoAddJobModal({ onClose, onAddJob, apiKey }) {
     setError("");
 
     try {
-      const parsedJobData = await parseJobPosting(jobLink, apiKey);
+      // console.log("AutoAddJobModal id:", userId);
+      const parsedJobData = await parseJobPosting(jobLink, apiKey, userId);
+
       const jobData = {
         ...parsedJobData,
         jobLink,

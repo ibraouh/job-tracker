@@ -27,11 +27,11 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Settings,
 } from "lucide-react";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
+  const [uid, setUid] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAutoAddModal, setShowAutoAddModal] = useState(false);
@@ -44,6 +44,7 @@ export default function Dashboard() {
     active: true,
     completed: true,
   });
+
   const [userProfile, setUserProfile] = useState(null);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -94,19 +95,20 @@ export default function Dashboard() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        console.log("User authenticated:", user.uid);
+        // console.log("User authenticated:", user.uid);
         setUser(user);
+        setUid(user.uid);
         const userProfileDoc = await getDoc(doc(db, "users", user.uid));
         if (userProfileDoc.exists()) {
-          console.log("User profile exists");
+          // console.log("User profile exists");
           setUserProfile(userProfileDoc.data());
         } else {
-          console.log("User profile does not exist");
+          // console.log("User profile does not exist");
           setShowUserSetupModal(true);
         }
         fetchJobs(user.uid);
       } else {
-        console.log("User not authenticated");
+        // console.log("User not authenticated");
         navigate("/login");
       }
     });
@@ -115,10 +117,36 @@ export default function Dashboard() {
   }, [navigate]);
 
   const handleUserSetup = async (userData) => {
-    await setDoc(doc(db, "users", user.uid), userData);
-    setUserProfile(userData);
+    const userDocRef = doc(db, "users", user.uid);
+    const currentUserData = await getDoc(userDocRef);
+
+    const updateData = {
+      name: userData.name,
+      icon: userData.icon,
+      resume: userData.resume,
+    };
+
+    // If the user doesn't exist yet, include the API key (if provided)
+    if (!currentUserData.exists()) {
+      if (userData.apiKey) {
+        updateData.apiKey = userData.apiKey;
+      }
+    } else {
+      // If the user exists, keep the existing API key
+      const existingData = currentUserData.data();
+      if (existingData.apiKey) {
+        updateData.apiKey = existingData.apiKey;
+      }
+    }
+    await setDoc(userDocRef, updateData, { merge: true });
+
+    // Update the local state
+    setUserProfile((prev) => ({
+      ...prev,
+      ...updateData,
+    }));
+
     setShowUserSetupModal(false);
-    setShowAPIKeySetupModal(true);
   };
 
   const handleAPIKeySetup = async (apiKey) => {
@@ -129,14 +157,14 @@ export default function Dashboard() {
 
   const fetchJobs = async (userId) => {
     try {
-      console.log("Fetching jobs for user:", userId);
+      // console.log("Fetching jobs for user:", userId);
       const q = query(collection(db, "jobs"), where("userId", "==", userId));
       const querySnapshot = await getDocs(q);
       const jobsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      console.log("Fetched jobs:", jobsData);
+      // console.log("Fetched jobs:", jobsData);
       setJobs(jobsData);
     } catch (error) {
       console.error("Error fetching jobs:", error);
@@ -158,8 +186,8 @@ export default function Dashboard() {
       return;
     }
     try {
-      console.log("Current user:", user);
-      console.log("Job data to be added:", jobData);
+      // console.log("Current user:", user);
+      // console.log("Job data to be added:", jobData);
 
       const jobDataWithUser = {
         ...jobData,
@@ -171,7 +199,7 @@ export default function Dashboard() {
 
       const docRef = await addDoc(collection(db, "jobs"), jobDataWithUser);
 
-      console.log("Document written with ID: ", docRef.id);
+      // console.log("Document written with ID: ", docRef.id);
 
       setJobs([...jobs, { id: docRef.id, ...jobDataWithUser }]);
       setShowAddModal(false);
@@ -289,7 +317,7 @@ export default function Dashboard() {
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    console.log(dateString);
+    // console.log(dateString);
 
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Yesterday";
@@ -368,6 +396,11 @@ export default function Dashboard() {
                   className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${columnWidths.status}`}
                 >
                   Status
+                </th>
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${columnWidths.status}`}
+                >
+                  ML Resume Match
                 </th>
                 <th
                   className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${columnWidths.actions}`}
@@ -521,6 +554,47 @@ export default function Dashboard() {
                   <td
                     className={`px-6 py-4 text-sm text-gray-900 ${columnWidths.actions}`}
                   >
+                    {(() => {
+                      // Get match percentage from job data or default to null
+                      const matchPercentage = job.resumeMatch
+                        ? parseInt(job.resumeMatch)
+                        : null;
+
+                      if (matchPercentage === null || isNaN(matchPercentage)) {
+                        return (
+                          <span className="italic text-gray-500">
+                            Not Calculated
+                          </span>
+                        );
+                      }
+
+                      // Determine color based on percentage
+                      let barColor;
+                      if (matchPercentage < 20) barColor = "bg-red-500";
+                      else if (matchPercentage < 40) barColor = "bg-orange-500";
+                      else if (matchPercentage < 60) barColor = "bg-yellow-500";
+                      else if (matchPercentage < 80) barColor = "bg-green-400";
+                      else barColor = "bg-green-600";
+
+                      return (
+                        <div className="flex items-center w-full">
+                          <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+                            <div
+                              className={`h-2.5 rounded-full ${barColor}`}
+                              style={{ width: `${matchPercentage}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs font-medium">
+                            {matchPercentage}%
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </td>
+
+                  <td
+                    className={`px-6 py-4 text-sm text-gray-900 ${columnWidths.actions}`}
+                  >
                     <div className="flex items-center space-x-2">
                       <a
                         href={job.jobLink}
@@ -597,7 +671,10 @@ export default function Dashboard() {
           <h4 className="font-medium">It's been more than a week</h4>
           <p className="text-sm text-gray-600 break-words">
             You've applied to google last week. <br></br>
-            <a href="https://google.com">Click here</a> to generate an email
+            <a className="" href="https://google.com">
+              Click here
+            </a>{" "}
+            to generate an email
           </p>
         </div>
         <div className="border-b pb-2">
@@ -905,18 +982,21 @@ export default function Dashboard() {
           onClose={() => setShowAutoAddModal(false)}
           onAddJob={handleAddJob}
           apiKey={userProfile?.apiKey}
+          userId={user.uid}
         />
       )}
       {showUserSetupModal && (
         <UserSetupModal
           onSubmit={handleUserSetup}
           onClose={() => setShowUserSetupModal(false)}
+          userData={userProfile}
         />
       )}
       {showAPIKeySetupModal && (
         <APIKeySetupModal
           onSubmit={handleAPIKeySetup}
           onClose={() => setShowAPIKeySetupModal(false)}
+          existingApiKey={userProfile?.apiKey || ""}
         />
       )}
     </div>

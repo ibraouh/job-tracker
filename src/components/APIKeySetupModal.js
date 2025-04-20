@@ -1,13 +1,30 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-export default function APIKeySetupModal({ onSubmit, onClose }) {
+export default function APIKeySetupModal({
+  onSubmit,
+  onClose,
+  existingApiKey = "",
+}) {
   const [apiKey, setApiKey] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (existingApiKey) {
+      const maskedKey = "**** - " + existingApiKey.slice(-4);
+      setApiKey(maskedKey);
+    }
+  }, [existingApiKey]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (apiKey) {
+    if (apiKey && (isEditing || !existingApiKey)) {
       onSubmit(apiKey);
     }
+  };
+
+  const handleInputChange = (e) => {
+    setApiKey(e.target.value);
+    setIsEditing(true);
   };
 
   return (
@@ -39,9 +56,12 @@ export default function APIKeySetupModal({ onSubmit, onClose }) {
               type="text"
               id="apiKey"
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              onChange={handleInputChange}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               required
+              placeholder={
+                existingApiKey ? "API Key is set" : "Enter your API Key"
+              }
             />
           </div>
           <div className="flex justify-between">
@@ -50,13 +70,13 @@ export default function APIKeySetupModal({ onSubmit, onClose }) {
               onClick={onClose}
               className="text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Set up later in settings
+              {existingApiKey ? "Cancel" : "Set up later in settings"}
             </button>
             <button
               type="submit"
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Save API Key
+              {existingApiKey ? "Update API Key" : "Save API Key"}
             </button>
           </div>
         </form>
